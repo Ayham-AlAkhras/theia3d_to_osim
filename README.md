@@ -1,7 +1,7 @@
 # Theia3D in OpenSim
 Convert Theia3D markerless motion capture data to skeletal joint angles and pelvis displacements (coordinates) for the [Rajagopal2016 model](https://simtk.org/projects/full_body) in OpenSim.
 
-<img width="6180" height="2772" alt="example image" src="https://github.com/user-attachments/assets/6d1b43aa-91fc-47ea-8f7c-5f110efd53dd" />
+<img width="3210" height="1616" alt="upper_body" src="https://github.com/user-attachments/assets/9137c746-0ce0-4b70-8c53-20e5669c3794" />
 
 These scripts were built using OpenSim 4.5 and Python 3.11, and tested with data from Theia3D 2022.2.
 
