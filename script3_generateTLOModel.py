@@ -65,6 +65,19 @@ ankleCoordNames = {'ankle_angle_r'    : 'ankle_dorsiflexion_r',
                    'ankle_angle_l'    : 'ankle_dorsiflexion_l',
                    'subtalar_angle_l' : 'ankle_inversion_l'}
 
+# Set the level of logging required according to OpenSim's convention:
+#   3 (OFF):    Do not log any messages. Useful when running an optimization or
+#               automated pipeline.
+#   
+#   2 (INFO):   Default.
+#   
+#   1 (DEBUG):  Log information that may be useful when debugging the operation
+#               of the software to investigate unexpected results.
+#   
+#   0 (TRACE):  Log as much as possible, including messages that describe the
+#               software's behavior step by step.
+osim.Logger.setLevel(osim.Logger.Level_Info)
+
 
 # ==========================  D E C L A R A T I O N  ===========================
 
@@ -270,10 +283,8 @@ for bodyName in bodyNameList:
 
 # Setting up the binary tree structure, define the child bodies for each parent.
 # NOTE: the head has no child bodies.
-definitionTransforms['torso'].rChild      = definitionTransforms['r_clavicle']
-definitionTransforms['torso'].lChild      = definitionTransforms['l_clavicle']
-definitionTransforms['r_clavicle'].rChild = definitionTransforms['r_uarm']
-definitionTransforms['l_clavicle'].lChild = definitionTransforms['l_uarm']
+definitionTransforms['torso'].rChild      = definitionTransforms['r_uarm']
+definitionTransforms['torso'].lChild      = definitionTransforms['l_uarm']
 definitionTransforms['r_uarm'].rChild     = definitionTransforms['r_larm']
 definitionTransforms['l_uarm'].lChild     = definitionTransforms['l_larm']
 definitionTransforms['r_larm'].rChild     = definitionTransforms['r_hand']
@@ -311,8 +322,6 @@ for root in ['head','torso','pelvis']:
                                      VEC3_ZERO)
 
 # Define the joint type for each body according to the Theia documentation.
-jointTypeDict['r_clavicle'] = osim.BallJoint # this should be a UniversalJoint
-jointTypeDict['l_clavicle'] = osim.BallJoint # this should be a UniversalJoint
 jointTypeDict['r_uarm']     = osim.FreeJoint # this could be a BallJoint
 jointTypeDict['l_uarm']     = osim.FreeJoint # this could be a BallJoint
 jointTypeDict['r_larm']     = osim.BallJoint # this should be a UniversalJoint
@@ -380,9 +389,9 @@ coordNameDict['l_thigh-pelvis_coord_0']    = 'hip_flexion_l'
 coordNameDict['l_thigh-pelvis_coord_1']    = 'hip_adduction_l'
 coordNameDict['l_thigh-pelvis_coord_2']    = 'hip_rotation_l'
 coordNameDict['l_toes-l_foot_coord_0']     = 'mtp_angle_l'
-coordNameDict['l_uarm-l_clavicle_coord_0'] = 'arm_flex_l'
-coordNameDict['l_uarm-l_clavicle_coord_1'] = 'arm_add_l'
-coordNameDict['l_uarm-l_clavicle_coord_2'] = 'arm_rot_l'
+coordNameDict['l_uarm-torso_coord_0'] = 'arm_flex_l'
+coordNameDict['l_uarm-torso_coord_1'] = 'arm_add_l'
+coordNameDict['l_uarm-torso_coord_2'] = 'arm_rot_l'
 coordNameDict['r_foot-r_shank_coord_0']    = 'ankle_angle_r'
 coordNameDict['r_foot-r_shank_coord_2']    = 'subtalar_angle_r'
 coordNameDict['r_hand-r_larm_coord_0']     = 'wrist_flex_r'
@@ -396,9 +405,9 @@ coordNameDict['r_thigh-pelvis_coord_0']    = 'hip_flexion_r'
 coordNameDict['r_thigh-pelvis_coord_1']    = 'hip_adduction_r'
 coordNameDict['r_thigh-pelvis_coord_2']    = 'hip_rotation_r'
 coordNameDict['r_toes-r_foot_coord_0']     = 'mtp_angle_r'
-coordNameDict['r_uarm-r_clavicle_coord_0'] = 'arm_flex_r'
-coordNameDict['r_uarm-r_clavicle_coord_1'] = 'arm_add_r'
-coordNameDict['r_uarm-r_clavicle_coord_2'] = 'arm_rot_r'
+coordNameDict['r_uarm-torso_coord_0'] = 'arm_flex_r'
+coordNameDict['r_uarm-torso_coord_1'] = 'arm_add_r'
+coordNameDict['r_uarm-torso_coord_2'] = 'arm_rot_r'
 coordNameDict['pelvis-ground_coord_0']     = 'pelvis_tilt'
 coordNameDict['pelvis-ground_coord_1']     = 'pelvis_list'
 coordNameDict['pelvis-ground_coord_2']     = 'pelvis_rotation'

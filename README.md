@@ -5,7 +5,7 @@ Convert Theia3D markerless motion capture data to skeletal joint angles and pelv
 
 These scripts were built using OpenSim 4.5 and Python 3.11, and tested with data from Theia3D 2022.2.
 
-Before running the code, open the Anaconda prompt and set up the environment using the spec file located in this repo's _SpecFiles_ folder:
+Before running the code, install Anaconda, open the Anaconda prompt, and set up the environment using the spec file located in this repo's _SpecFiles_ folder:
 
 ```
 conda create --name theia2osim_latest --file spec-file-opensim45-python311.txt
@@ -34,9 +34,10 @@ This script processes a .txt file from Theia3D containing transformation matrice
       - The determinant of a matrix must equal 1.
       - The inverse of a matrix must be equal to its transpose.
   8. The world-frame rotation matrix must be an identity matrix throughout the motion.
+  9. The pelvis' anterior axis points close to OpenSim's positive X-axis. This prevents issues with OpenSim's inverse kinematics and gimbal flip.
 
 ## script2_createTRCFile
-This script generates a .trc file containing position information on joint origins from Theia3D for use in OpenSim. The input to this script must first be generated using script1_parseTheiaData. If you want to use only orientation data from Theia3D in this workflow, set the flag `justRootBodies` to `True`.
+This script generates a .trc file containing position information on joint origins from Theia3D for use in OpenSim. The input to this script must first be generated using script1_parseTheiaData. If you want to use only orientation data from Theia3D in this workflow, set the flag `justRootOrigins` to `True`.
 
 ## script3_generateTLOModel
 This script generates an OpenSim musculoskeletal model that is designed to imitate Theia3D's proprietary model; we call this model the "Theia-like OpenSim" (TLO) model. The TLO model is an intermediary model that allows us to visualize and verify the data according to [Theia3D's "Default Model"](https://docs.theiamarkerless.com/apollo-v2024/theia3d-documentation/theia-model-description). Note that this script generates the TLO model according to the Theia3D data at a specified time step; the state of the model at this time step is the TLO model's default pose. The inputs to this script must first be generated using script1_parseTheiaData.

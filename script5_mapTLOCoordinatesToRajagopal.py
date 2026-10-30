@@ -185,6 +185,20 @@ offsetDict = {'pelvis_tx' : 0.06862242642356366,
                       -0.6332592653583906,
                       -0.6123625334454326]}
 
+# Set the level of logging required according to OpenSim's convention:
+#   3 (OFF):    Do not log any messages. Useful when running an optimization or
+#               automated pipeline.
+#   
+#   2 (INFO):   Default.
+#   
+#   1 (DEBUG):  Log information that may be useful when debugging the operation
+#               of the software to investigate unexpected results.
+#   
+#   0 (TRACE):  Log as much as possible, including messages that describe the
+#               software's behavior step by step.
+osim.Logger.setLevel(osim.Logger.Level_Info)
+
+
 # ==========================  D E C L A R A T I O N  ===========================
 
 global IDENTITY_ROT
@@ -337,8 +351,8 @@ def trimDf(self: pandas.DataFrame,
     
     timeSeries = self[timeLabel]
     
-    startDif = timeSeries.astype(float,copy=True) - startTime
-    endDif = timeSeries.astype(float,copy=True) - endTime
+    startDif = timeSeries.astype(float).copy() - startTime
+    endDif = timeSeries.astype(float).copy() - endTime
     
     startIndex = startDif.abs().argmin()
     endIndex = endDif.abs().argmin()
@@ -506,7 +520,7 @@ def computeOffsets(tloDf : pandas.DataFrame,
     # Average the quaternions over time.
     averagesQuat = {}
     averagesCart = {}
-    offsetQuatNp = offsetQuatDf.to_numpy(dtype=float,copy=True)
+    offsetQuatNp = offsetQuatDf.to_numpy(dtype=float).copy()
     nQuat = (offsetQuatNp.shape[1] - 1) // 4  # Compute number of quaternions
     columnLabels = list(offsetQuatDf.columns)
     
@@ -634,6 +648,7 @@ def mapJoint(mpdJointName : str,
     
     return appliedOffsets
 
+# Map all joints.
 def mapAll(tloModel         : osim.Model,
            tloData          : pandas.DataFrame,
            mpdModel         : osim.Model,
@@ -922,18 +937,17 @@ sknDf = readMotFile(sknDataFileName)
 tloDf = trimDf(tloDf,startTime,endTime)
 sknDf = trimDf(sknDf,startTime,endTime)
 
-if len(tloDf['time']) != len(sknDf['time']):
+if len(tloDf['time']) != len(sknDf['time']) and individualOffsets==True:
     raise Exception('ERROR: Trimmed TLO and marker time arrays do not match in '
-                    'length.\nMake sure that:'
-                    '\n'
-                    '\tTheia and marker data are using the same data-rate.'
-                    '\n'
+                    'length.Make sure that:\n'
+                    '\tTheia and marker data are using the same data-rate.\n'
                     '\tSelected time range is valid for Theia and marker data.')
 
 tloModel = osim.Model(tloModelFileName)
 errModel = osim.Model(tloModelFileName)
 mpdModel = osim.Model(rajModelFileName)
-sknModel = osim.Model(rajModelFileName)
+if individualOffsets:
+    sknModel = osim.Model(rajModelFileName)
 
 mpdModelJointSet = mpdModel.getJointSet()
 

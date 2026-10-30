@@ -44,6 +44,8 @@
 #       - The inverse of a matrix must be equal to its transpose.
 #   8. The world-frame rotation matrix must be an identity matrix throughout the
 #      motion.
+#   9. The pelvis' anterior axis points close to OpenSim's positive X-axis. This
+#      prevents issues with OpenSim's inverse kinematics and gimbal flip.
 #
 # The data used for this script is not the native output from Theia3D. If you
 # have .c3d files from Theia3D, convert them to .txt files using Visual3D. Each
@@ -82,8 +84,10 @@ endTimeStep = 3540
 # Set the capture rate of the Theia3D data (Hz).
 dataRate = 60
 
-# Exclude these bodies from parsing.
-excludedBodies = ['worldbody','pelvis_shifted']#,'vlb'
+# Exclude these bodies from parsing if they exist. Bodies r_clavicle and
+# l_clavicle are excluded such that these scripts work for Theia3D v2022 and
+# v2025.
+excludedBodies = ['worldbody','pelvis_shifted','vlb','r_clavicle','l_clavicle']
 
 # Flag to enable/disable orthogonality test (check 7).
 # NOTE: This check is computationally expensive and greatly increases runtime.
@@ -92,8 +96,12 @@ testOrthogonality = True
 # Flag to enable/disable world reference frame rotation matrix test (check 8).
 testWorldIdentity = True
 
+# Flag to enable/disable a check for the pelvis Z-axis being within 45 degrees
+# of X-axis (check 9).
+testPelvisAlignment = True
+
 # Specify the rotation matrix that is multiplied by the Theia3D data to rotate
-# the model such that the model is upright (Y-axis should point up). A
+# the model such that the model is upright (Y-axis superior, X-axis anterior). A
 # world-fixed rotation of -90 degrees about the x-axis then a world-fixed
 # rotation of 180 degrees about the y-axis is the default assignment.
 # NOTE: There's no check for this; we trust it's a valid rotation.
@@ -137,6 +145,8 @@ with open(theiaFileName) as file:
     dataReadAll = file.readlines()
     dataReadAll = dataReadAll[0:5] + dataReadAll[startIndex:endIndex]
     numberOfLines = len(dataReadAll)
+    if numberOfLines <= 5:
+        raise Exception("ERROR: Data is empty, check start and end time steps.")
 
 if (LOG_LEVEL <= 1):
     timerEndRead = time.time() # Timer for reading in the file.
@@ -166,7 +176,9 @@ for iteration, currentDataLine in enumerate(dataReadAll[:4]):
     if (dataReadLine1Length != currentDataLine.count('\t')):
         if (LOG_LEVEL <= 2):
             print(f'WARNING: Length of line {iteration+1} differs from length '
-                   'of first line.')
+                   'of first data line.')
+            print(dataReadLine1Length)
+            print(currentDataLine.count('\t'))
 if (LOG_LEVEL <= 1):
     print('SUCCESS: All title lines are of the same length.')
 # ---------------------------------------------------------------------------- #
@@ -176,7 +188,7 @@ if (LOG_LEVEL <= 1):
 
 # NOTE: In the main loop, 6 lines of data are ignored (first 5 and last 1).
 if (LOG_LEVEL <= 1):
-    timerStoreIteration = [0] * (numberOfLines-5-startTimeStep)
+    timerStoreIteration = [0] * (numberOfLines-5)
 
 # ---------------------------------- CHECK 3 --------------------------------- #
 # Check that there are 16 unique, consecutive matrix indices for each body
@@ -206,16 +218,21 @@ lineOrientDict = {} # The orientation dict storing a single line at a time.
 lineOriginDict = {} # The origin dict storing a single line at a time.
 
 # Pre-allocating arrays for the main loop.
-projectionRow   = np.empty(4,     dtype=float)
-translationCol  = np.empty(3,     dtype=float)
-rotationMatrix  = np.empty((3,3), dtype=float)
-transformMatrix = np.empty((4,4), dtype=float)
+projectionRow   = np.zeros(4,     dtype=float)
+translationCol  = np.zeros(3,     dtype=float)
+rotationMatrix  = np.zeros((3,3), dtype=float)
+transformMatrix = np.zeros((4,4), dtype=float)
 projectionCheck = np.array([0,0,0,1])
 identity        = np.eye(3)
 
 # Defining some misc. variables for the main loop.
 bodyNames = dataReadAll[1].split()
 lineDeleted = False
+rotationPelvisAlignment = np.array([[0,1,0],
+                                    [0,0,1],
+                                    [1,0,0]])
+pelvisAlignmentGood = True
+linesProcessed = 0
 
 # Main parsing loop, the loop skips the first five lines as they hold no
 # movement data.
@@ -224,6 +241,11 @@ for iteration, currentDataLine in enumerate(dataReadAll[5:]):
     # +1 to change from zero-based to one-based and +5 to skip the first 5 lines
     # of the file.
     lineNumber = iteration + 1 + 5 + (startTimeStep)
+    
+    if "nan" in currentDataLine.lower():
+        if LOG_LEVEL <= 1:
+            print(f"Skipped line {lineNumber}, NaNs found.")
+        continue
     
     # Create a list for the current line of data.
     currentDataList = currentDataLine.split()
@@ -340,9 +362,9 @@ for iteration, currentDataLine in enumerate(dataReadAll[5:]):
                 # NOTE: Determinant must be 1 (never -1) because a right-handed.
                 # coordinate system is used in Theia.
                 rotMatDet = np.linalg.det(rotationMatrix)
-                if (1-TOL_DET > (rotMatDet) > TOL_DET+1):
-                    print('WARNING: Determinant is not within the tolerance.'
-                         f'({TOL_DET}), on line {iteration+startTimeStep+1}.')
+                if ((abs(rotMatDet) - 1.0) > TOL_DET):
+                    print(f'WARNING: Determinant is not close enough to +-1 '
+                         f'({rotMatDet}), on line {iteration+startTimeStep+1}.')
                 
                 # CHECK 7.3: Check that the inverse of the matrix is equal to
                 # its transpose.
@@ -369,16 +391,33 @@ for iteration, currentDataLine in enumerate(dataReadAll[5:]):
                               'the Theia frame.')
             # ---------------------------------------------------------------- #
             
+            # ---------------------------- CHECK 9 --------------------------- #
+            # Check that the world frame rotation matrix an identity matrix in
+            # every frame of the motion.
+            if (testPelvisAlignment):
+                if (bodyName == 'pelvis'):
+                    # Compute relative angle and warn if too large.
+                    rotationRelative = np.dot(np.transpose(rotationMatrix),
+                                              rotationPelvisAlignment)
+                    # Clip the value before performing arccos.
+                    cosAngle = np.clip((np.trace(rotationRelative)-1)/2,-1,1)
+                    angleRelative = np.arccos(cosAngle)
+                    if (abs(angleRelative) >= np.radians(45)):
+                        pelvisAlignmentGood = False
+            # ---------------------------------------------------------------- #
+            
             # Re-declare the transform array.
             # NOTE: Arrays must be re-declared such that the dict values are
             # unique. The dict essentially points to the assigned array, so not
             # declaring the array here means that all entries of the dict for
             # all bodies would reference a single array.
-            transformMatrix = np.empty((4,4), dtype=float)
+            transformMatrix = np.zeros((4,4), dtype=float)
     
     for bodyToRemove in excludedBodies:
-        lineOrientDict.pop(bodyToRemove)
-        lineOriginDict.pop(bodyToRemove)
+        if bodyToRemove in lineOrientDict.keys():
+            lineOrientDict.pop(bodyToRemove)
+        if bodyToRemove in lineOriginDict.keys():
+            lineOriginDict.pop(bodyToRemove)
     
     # After an iteration is complete, the resulting dictionary is added to the
     # main dictionary with the key being the time at the current time-step.
@@ -394,6 +433,13 @@ for iteration, currentDataLine in enumerate(dataReadAll[5:]):
     if (LOG_LEVEL <= 1):
         timerEndIteration = time.time() # Timer for each iteration.
         timerStoreIteration[iteration]=(timerEndIteration - timerStartIteration)
+    
+    linesProcessed += 1
+
+if not pelvisAlignmentGood:
+    print('\nWARNING: Anterior direction not in positive X and/or superior '
+          'direction not in positive Y. This may cause gimbal flip in '
+          'OpenSim\'s inverse kinematics.')
 
 if (LOG_LEVEL <= 1):
     # Average time for all steps in the main loop.
@@ -418,6 +464,6 @@ if (LOG_LEVEL <= 2):
 
 # Done message.
 if (LOG_LEVEL <= 2):
-    print(f'\nDone! Two PKL files created:\n',
+    print(f'\nDone! Two PKL files created from {linesProcessed} time steps:\n',
           outputOriginFileName,'\n',
           outputOrientationFileName)
