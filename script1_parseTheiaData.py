@@ -60,6 +60,8 @@
 import time
 import numpy as np
 import pickle
+from ezc3d import c3d
+from pathlib import Path
 
 
 # ===========================  P A R A M E T E R S  ============================
@@ -82,7 +84,7 @@ startTimeStep = 2716
 endTimeStep = 3540
 
 # Set the capture rate of the Theia3D data (Hz).
-dataRate = 60
+dataRate = 60.0
 
 # Exclude these bodies from parsing if they exist. Bodies r_clavicle and
 # l_clavicle are excluded such that these scripts work for Theia3D v2022 and
@@ -134,6 +136,58 @@ if (LOG_LEVEL <= 2):
     timerStartEntire = time.time() # Timer for the entire script.
 if (LOG_LEVEL <= 1):
     timerStartRead = time.time() # Timer for reading in the file.
+
+# Convert .c3d file to .txt file if necessary.
+theiaPath = Path(theiaFileName)
+if theiaPath.suffix == ".c3d":
+    c = c3d(theiaFileName)
+    
+    transforms = c['data']['rotations']
+    labels = c['parameters']['ROTATION']['LABELS']['value']
+    dataRateFromFile = c['header']['rotations']['frame_rate']
+    if dataRateFromFile != dataRate:
+        print('WARNING: data rate in c3d file '
+             f'({dataRateFromFile}) inconsistent with input ({dataRate}).')
+    
+    nRows = len(c['data']['rotations'][0][0][0])
+    
+    theiaFileName = str(theiaPath.with_suffix('.txt'))
+    f = open(theiaFileName, "w", encoding="utf-8")
+    
+    # Write lines of data.
+    for i in range(16*len(labels)):
+        f.write("\t")
+        f.write("EXPORTED BY THEIA3D_TO_OSIM")
+    f.write("\n")
+    for label in labels:
+        for i in range(16):
+            f.write("\t")
+            f.write(label)
+    f.write("\n")
+    for label in labels:
+        for i in range(16):
+            f.write("\t")
+            f.write("ROTATION")
+    f.write("\n")
+    for label in labels:
+        for i in range(16):
+            f.write("\t")
+            f.write("ORIGINAL")
+    f.write("\nITEM")
+    for label in labels:
+        for i in range(16):
+            f.write("\t")
+            f.write(str(i))
+    for k in range(nRows):
+        f.write("\n")
+        f.write(str(k+1))
+        for label in range(len(labels)):
+            for i in range(4):
+                for j in range(4):
+                    f.write("\t")
+                    f.write(str(transforms[i][j][label][k]))
+
+    f.close()
 
 # Read in the file according to the number of lines specified.
 with open(theiaFileName) as file:
