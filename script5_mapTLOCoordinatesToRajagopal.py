@@ -939,7 +939,7 @@ sknDf = trimDf(sknDf,startTime,endTime)
 
 if len(tloDf['time']) != len(sknDf['time']) and individualOffsets==True:
     raise Exception('ERROR: Trimmed TLO and marker time arrays do not match in '
-                    'length.Make sure that:\n'
+                    'length. Make sure that:\n'
                     '\tTheia and marker data are using the same data-rate.\n'
                     '\tSelected time range is valid for Theia and marker data.')
 

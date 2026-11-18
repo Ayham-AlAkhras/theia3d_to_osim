@@ -34,7 +34,7 @@ This script processes a .txt file from Theia3D containing transformation matrice
       - The determinant of a matrix must equal 1.
       - The inverse of a matrix must be equal to its transpose.
   8. The world-frame rotation matrix must be an identity matrix throughout the motion.
-  9. The pelvis' anterior axis points close to OpenSim's positive X-axis. This prevents issues with OpenSim's inverse kinematics and gimbal flip.
+  9. The pelvis' anterior axis points close to OpenSim's positive X-axis. This prevents issues with OpenSim's inverse kinematics tool and gimbal flip.
 
 ## script2_createTRCFile
 This script generates a .trc file containing position information on joint origins from Theia3D for use in OpenSim. The input to this script must first be generated using script1_parseTheiaData. If you want to use only orientation data from Theia3D in this workflow, set the flag `justRootOrigins` to `True`.

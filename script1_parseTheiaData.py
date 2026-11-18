@@ -45,7 +45,7 @@
 #   8. The world-frame rotation matrix must be an identity matrix throughout the
 #      motion.
 #   9. The pelvis' anterior axis points close to OpenSim's positive X-axis. This
-#      prevents issues with OpenSim's inverse kinematics and gimbal flip.
+#      prevents issues with OpenSim's inverse kinematics tool and gimbal flip.
 #
 # The data used for this script is not the native output from Theia3D. If you
 # have .c3d files from Theia3D, convert them to .txt files using Visual3D. Each
@@ -86,8 +86,8 @@ endTimeStep = 3540
 # Set the capture rate of the Theia3D data (Hz).
 dataRate = 60.0
 
-# Exclude these bodies from parsing if they exist. Bodies r_clavicle and
-# l_clavicle are excluded such that these scripts work for Theia3D v2022 and
+# Exclude these bodies from parsing (if they exist). Bodies r_clavicle and
+# l_clavicle are excluded so that these scripts work for Theia3D v2022 and
 # v2025.
 excludedBodies = ['worldbody','pelvis_shifted','vlb','r_clavicle','l_clavicle']
 
@@ -99,7 +99,7 @@ testOrthogonality = True
 testWorldIdentity = True
 
 # Flag to enable/disable a check for the pelvis Z-axis being within 45 degrees
-# of X-axis (check 9).
+# of the global X-axis (check 9).
 testPelvisAlignment = True
 
 # Specify the rotation matrix that is multiplied by the Theia3D data to rotate
@@ -417,7 +417,7 @@ for iteration, currentDataLine in enumerate(dataReadAll[5:]):
                 # coordinate system is used in Theia.
                 rotMatDet = np.linalg.det(rotationMatrix)
                 if ((abs(rotMatDet) - 1.0) > TOL_DET):
-                    print(f'WARNING: Determinant is not close enough to +-1 '
+                    print(f'WARNING: Determinant is not close enough to ±1 '
                          f'({rotMatDet}), on line {iteration+startTimeStep+1}.')
                 
                 # CHECK 7.3: Check that the inverse of the matrix is equal to
@@ -431,8 +431,8 @@ for iteration, currentDataLine in enumerate(dataReadAll[5:]):
             # ---------------------------------------------------------------- #
             
             # ---------------------------- CHECK 8 --------------------------- #
-            # Check that the world frame rotation matrix an identity matrix in
-            # every frame of the motion.
+            # Check that the world frame rotation matrix is an identity matrix
+            # in every frame of the motion.
             if (testWorldIdentity):
                 if (bodyName == 'worldbody'):
                     # NOTE: Here, we use the rotation from Theia to OpenSim (not
@@ -446,8 +446,8 @@ for iteration, currentDataLine in enumerate(dataReadAll[5:]):
             # ---------------------------------------------------------------- #
             
             # ---------------------------- CHECK 9 --------------------------- #
-            # Check that the world frame rotation matrix an identity matrix in
-            # every frame of the motion.
+            # Check that the pelvis' anterior axis points close to OpenSim's
+            # positive X-axis.
             if (testPelvisAlignment):
                 if (bodyName == 'pelvis'):
                     # Compute relative angle and warn if too large.
@@ -493,7 +493,7 @@ for iteration, currentDataLine in enumerate(dataReadAll[5:]):
 if not pelvisAlignmentGood:
     print('\nWARNING: Anterior direction not in positive X and/or superior '
           'direction not in positive Y. This may cause gimbal flip in '
-          'OpenSim\'s inverse kinematics.')
+          'OpenSim\'s inverse kinematics algorithm.')
 
 if (LOG_LEVEL <= 1):
     # Average time for all steps in the main loop.
