@@ -66,12 +66,14 @@ from pathlib import Path
 
 # ===========================  P A R A M E T E R S  ============================
 
-# Set file name of input file (*.txt). If you have .c3d files from Theia3D,
-# convert them to a .txt file using Visual3D. Note that OpenSim 4.4 cannot
-# process the .c3d files from Theia3D. The .txt should contain 4x4 transforms in
-# row-major for each body segment (columns) and time-step (rows). Even though
-# the scripts can address this given the correct parameters, it's best if the
-# Theia3D data is spatially and temporally synchronized to the marker data.
+# Set file name of input file (*.txt or *.c3d):
+#   .txt:   must contain 4x4 transforms in row-major for each body segment
+#           (columns) and time-step (rows). Can be exported using Visual3D.
+#   .c3d:   this script will automatically convert a .c3d file from Theia3D to
+#           a compatible .txt file before parsing.
+# NOTE: Even though the scripts can address this given the correct parameters,
+# it's best if the Theia3D data is spatially and temporally synchronized to the
+# marker data.
 theiaFileName = 'SampleData/P01_tr03_normal_4x4.txt'
 
 # Set output file names (*.pkl).
