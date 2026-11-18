@@ -148,6 +148,20 @@ TOL_ROT = 10e-5 # For rotation matrix entries
 # Set the accuracy for InverseKinematicsSolver.
 TOL_IK = 10e-8
 
+# Set the level of logging required according to OpenSim's convention:
+#   3 (OFF):    Do not log any messages. Useful when running an optimization or
+#               automated pipeline.
+#   
+#   2 (INFO):   Default.
+#   
+#   1 (DEBUG):  Log information that may be useful when debugging the operation
+#               of the software to investigate unexpected results.
+#   
+#   0 (TRACE):  Log as much as possible, including messages that describe the
+#               software's behavior step by step.
+osim.Logger.setLevel(osim.Logger.Level_Info)
+
+
 # ==========================  D E C L A R A T I O N  ===========================
 
 # Method to compare two lists, make sure they're of the same size, and have the

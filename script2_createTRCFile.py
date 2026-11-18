@@ -27,7 +27,7 @@
 # This script generates a .trc file containing position information on joint
 # origins from Theia3D for use in OpenSim. The input to this script must first
 # be generated using script1_parseTheiaData. If you want to use only orientation
-# data from Theia3D in this workflow, set the flag 'justRootBodies' to 'True'.
+# data from Theia3D in this workflow, set the flag 'justRootOrigins' to 'True'.
 #
 # This script was built using OpenSim 4.5 and Python 3.11 and tested with data
 # from Theia3D 2022.2.
@@ -54,23 +54,21 @@ dataRate = 60
 # correct position relative to the root bodies throughout the motion. Set this
 # to `True` if you would like the model to not translate in 3D space (common for
 # orientation only workflows such as IMU inverse kinematics in OpenSim).
-staticRootBodies = False
+staticRootOrigins = False
 staticFrame = 0
 
 # Create a file with only root body information; all other bodies are omitted.
 # Set this to `True` if you would like to map only orientation data from Theia3D
 # into OpenSim.
 # NOTE: Orientation information is still processed for all bodies.
-justRootBodies = True
+justRootOrigins = False
 
 
 # ===============================  S C R I P T  ================================
 
-torsoBodies = ['l_clavicle',
-                'l_hand',
+torsoBodies = ['l_hand',
                 'l_larm',
                 'l_uarm',
-                'r_clavicle',
                 'r_hand',
                 'r_larm',
                 'r_uarm']
@@ -99,7 +97,7 @@ frameCount = len(originDict)
 bodyList = list(originDict[list(originDict.keys())[0]].keys())
 
 # Remove bodies if necessary.
-if (justRootBodies):
+if (justRootOrigins):
     tempList = bodyList.copy()
     for i, name in enumerate(bodyList):
         if (name=='head' or name=='torso' or name=='pelvis'):
@@ -146,7 +144,7 @@ for timeStep, t in enumerate(originDict, 1):
     trcFile.write(f'{timeStep}\t{t}\t')
     
     # Obtain the offset of the root bodies for each time-step if necessary.
-    if (staticRootBodies):
+    if (staticRootOrigins):
         for bodyName in rootBodies:
             offset[bodyName] = \
                 originDict[list(originDict.keys())[staticFrame]][bodyName] - \
@@ -161,7 +159,7 @@ for timeStep, t in enumerate(originDict, 1):
         
         # Modify the origin vector to keep the child bodies consistent with the
         # roots if necessary.
-        if (staticRootBodies):
+        if (staticRootOrigins):
             if (bodyName in torsoBodies):
                 originVector = originVector + offset['torso']
             elif (bodyName in pelvisBodies):
